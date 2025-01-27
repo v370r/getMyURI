@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for getmyuri
+name: CI/CD Pipeline for getMyURI
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
           username: vetor
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "backend/backend/target/*.jar"
-          target: "/home/vetor/projects/getmyuri/backend/"
+          target: "/home/vetor/projects/getMyURI/backend/"
 
       - name: Restart Spring Boot Service
         uses: appleboy/ssh-action@v0.1.10
@@ -39,4 +39,4 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: vetor
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: sudo -S systemctl restart getmyuri
+          script: sudo -S systemctl restart getMyURI
