@@ -39,4 +39,4 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: vetor
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: sudo systemctl restart getmyuri
+          script: sudo -S systemctl restart getmyuri
