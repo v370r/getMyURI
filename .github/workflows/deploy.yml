@@ -1,0 +1,42 @@
+name: CI/CD Pipeline for getmyuri
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build Spring Boot App
+        run: |
+          cd backend
+          mvn clean package -DskipTests
+
+      - name: Copy JAR to Ubuntu Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: vetor
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "backend/backend/target/*.jar"
+          target: "/home/vetor/projects/getmyuri/backend/"
+
+      - name: Restart Spring Boot Service
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: vetor
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: sudo systemctl restart getmyuri
