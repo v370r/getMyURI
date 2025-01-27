@@ -31,7 +31,7 @@ jobs:
           username: vetor
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "backend/backend/target/*.jar"
-          target: "/home/vetor/projects/getMyURI/backend/"
+          target: "/home/vetor/projects/getMyURI/"
 
       - name: Restart Spring Boot Service
         uses: appleboy/ssh-action@v0.1.10
