@@ -26,13 +26,8 @@ getmyuri is a **URL shortening and website routing platform** designed to provid
 
 ### 2️⃣ Resume Support **
 - Users can create their own urls like **getmyuri.com/vijay/resume** to send over the internet by attaching their updated Url of theeir drive or anythin
-- Example:
-   ```
-   **getmyuri.com/vijay/resume** -> Routes to  https://o365coloradoedu-my.sharepoint.com/:b:/g/personal/vipo4345_colorado_edu/Edd5HouxdUhMoPa1xWe0cSIBpJy1TgoxDj-zxXTe8Z6VxA?e=mXCbEf
-   ```
- - User can log into dashboard and update the route whenever is possible but we will limit it for freemium users.
 
-### **3️⃣ Website Hosting & Routing**
+### **2️⃣ Website Hosting & Routing**
 - Users can **route traffic to their own hosted websites/projects**.
 - Example:
   ```
@@ -41,11 +36,11 @@ getmyuri is a **URL shortening and website routing platform** designed to provid
 - Supports **single-page applications (React, Angular, Vue)**.
 - Ideal for **freelancers, developers, and startups** that need a quick way to share projects.
 
-### **4️⃣ API for Developers & Businesses**
+### **3️⃣ API for Developers & Businesses**
 - REST API for programmatic **link creation, analytics, and management**.
 - Can be integrated into **marketing tools, campaign trackers, and SaaS applications**.
 
-### **5 Multi-Cloud Infrastructure & CI/CD**
+### **4️⃣ Multi-Cloud Infrastructure & CI/CD**
 - **Oracle Cloud** (24GB) for production hosting.
 - **MacOS Mini (8GB + 2TB HDD)** for staging/testing.
 - **AWS Free Tier (t3.micro)** for CI/CD automation.

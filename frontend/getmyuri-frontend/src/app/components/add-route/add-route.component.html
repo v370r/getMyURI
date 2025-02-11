@@ -1,0 +1,11 @@
+<div>
+  <h2>Add Route</h2>
+  <label>Short URL Path:</label>
+  <input [(ngModel)]="path" placeholder="Enter path">
+  <br>
+  <label>Target URL:</label>
+  <input [(ngModel)]="targetUrl" placeholder="Enter target URL">
+  <br>
+  <button (click)="addRoute()">Create Route</button>
+  <p>{{ message }}</p>
+</div>

@@ -1,0 +1,9 @@
+<div>
+  <h2>Available Routes</h2>
+  <ul>
+    <li *ngFor="let route of routes">
+      <a [routerLink]="['/', route.path]">{{ route.path }}</a> → {{ route.target }}
+    </li>
+  </ul>
+  <a routerLink="/add"><button>Add Route</button></a>
+</div>
