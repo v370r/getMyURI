@@ -15,21 +15,27 @@ export class RedirectComponent {
     if (path) {
       this.urlService.getRedirect(path).subscribe(targetUrl => {
 
-        if (targetUrl.startsWith("Redirecting to: ")) {
-          let finalUrl = targetUrl.replace("Redirecting to: ", "").trim();
+        // if (targetUrl.startsWith("Redirecting to: ")) {
+        //   let finalUrl = targetUrl.replace("Redirecting to: ", "").trim();
 
-          // Ensure it has a valid URL scheme
-          if (!/^https?:\/\//i.test(finalUrl)) {
-            finalUrl = "https://" + finalUrl; // Default to HTTPS
-          }
+        //   // Ensure it has a valid URL scheme
+        //   if (!/^https?:\/\//i.test(finalUrl)) {
+        //     finalUrl = "https://" + finalUrl; // Default to HTTPS
+        //   }
 
-          console.log("Redirecting now to:", finalUrl);
+        //   console.log("Redirecting now to:", finalUrl);
 
-          // Ensure a real browser redirect
-          window.location.assign(finalUrl);
-        } else {
-          alert("404 - Route not found");
-          this.router.navigate(['/']);
+        //   // Ensure a real browser redirect
+        //   window.location.assign(finalUrl);
+        // } else {
+        //   alert("404 - Route not found");
+        //   this.router.navigate(['/']);
+        // }
+
+        if (path && path !== 'dashboard') {
+          const apiUrl = `/${path}`; // Proxy will handle forwarding to backend
+          console.log("Redirecting API Call:", apiUrl);
+          window.location.href = apiUrl;
         }
       });
     }
