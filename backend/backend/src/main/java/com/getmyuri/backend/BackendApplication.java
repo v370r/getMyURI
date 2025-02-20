@@ -36,6 +36,7 @@ public class BackendApplication {
 	public ResponseEntity<Void> redirect(@PathVariable String path) {
 		String targetUrl = urlMappings.get(path);
 		if (targetUrl != null) {
+			System.out.println("Routing to: " + path + " -> " + targetUrl);
 			return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).location(URI.create(targetUrl)).build();
 		} else {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
