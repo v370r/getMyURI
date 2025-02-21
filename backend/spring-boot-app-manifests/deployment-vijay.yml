@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: getMyURI-backend
+  labels:
+    app: getMyURI-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: getMyURI-backend
+  template:
+    metadata:
+      labels:
+        app: getMyURI-backend
+    spec:
+      containers:
+      - name: getMyURI-backend
+        image: v370r1/getMyURI:replaceImageTag
+        ports:
+        - containerPort: 8080
