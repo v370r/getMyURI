@@ -39,7 +39,7 @@ pipeline {
         }
       }
     }
-    stage('Build and Push Docker Image') {
+    stage('Build and Push Docker Image to DockerHub ') {
       environment {
         DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
         // DOCKERFILE_LOCATION = "java-maven-sonar-argocd-helm-k8s/spring-boot-app/Dockerfile"
@@ -55,6 +55,21 @@ pipeline {
         }
       }
     }
+  // TODO: Future enhancement
+  //   stage('Build and Push Docker Image to Local Registry') {
+  //   environment {
+  //     DOCKER_IMAGE = "localhost:5000/getmyuri:${BUILD_NUMBER}"
+  //   }
+  //   steps {
+  //     script {
+  //       sh 'cd backend/backend && docker build -t ${DOCKER_IMAGE} .'
+  //       def dockerImage = docker.image("${DOCKER_IMAGE}")
+  //       // If your registry requires credentials, you can set up Docker config or use withRegistry
+  //       // For a local, unsecured registry, you might just push directly:
+  //       sh "docker push ${DOCKER_IMAGE}"
+  //     }
+  //   }
+  // }
     stage('Update Deployment File') {
         environment {
             GIT_REPO_NAME = "getMyURI"
@@ -63,9 +78,11 @@ pipeline {
         steps {
             withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                 sh '''
+                    set -x
                     git config user.email "studyrockers5@gmail.com"
                     git config user.name "v370r1"
                     BUILD_NUMBER=${BUILD_NUMBER}
+                    echo "Updating deployment file with build number ${BUILD_NUMBER}"
                     sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" backend/backend/spring-boot-app-manifests/deployment.yml
                     git add backend/backend/spring-boot-app-manifests/deployment.yml
                     git commit -m "Update deployment image to version ${BUILD_NUMBER}"
