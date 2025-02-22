@@ -76,7 +76,7 @@ pipeline {
             GIT_USER_NAME = "v370r1"
         }
         steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+            sshagent(['70963de9-2df1-45e0-8d65-a8fc95f99008']) {
               sh '''
                 set -x
                 echo "=== BEGIN Update Deployment File Stage ==="
@@ -87,6 +87,8 @@ pipeline {
                 # Verify the target directory exists
                 echo "Listing backend/backend/spring-boot-app-manifests:"
                 ls -la backend/backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
+
+                git remote -v || echo "No remote found"
 
                 git config user.email "studyrockers5@gmail.com"
                 git config user.name "v370r1"
