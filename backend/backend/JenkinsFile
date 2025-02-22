@@ -39,6 +39,13 @@ pipeline {
         }
       }
     }
+    //FIXME:
+    stage('Diagnose Workspace') {
+      steps {
+        sh 'pwd'
+        sh 'ls -la'
+      }
+    }
     stage('Build and Push Docker Image') {
       environment {
         DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
