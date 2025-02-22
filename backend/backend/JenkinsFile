@@ -19,9 +19,16 @@ pipeline {
         sh 'cd backend/backend && mvn clean package'
       }
     }
+      stage('Test Sonar Connectivity') {
+      steps {
+        // Replace with the IP that the container can reach
+        sh 'curl -v http://172.17.0.1:9000/actuator/health'
+      }
+    }
+
     stage('Static Code Analysis') {
       environment {
-        SONAR_URL = "http://vetor.local:9000" //seems same network
+        SONAR_URL = "http://172.17.0.1:9000" //seems same network
       }
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
