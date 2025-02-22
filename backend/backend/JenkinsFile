@@ -28,18 +28,16 @@ pipeline {
 
     stage('Static Code Analysis') {
       environment {
-        SONAR_URL = "http://172.17.0.1:9000" //seems same network
+        SONAR_URL = "http://172.17.0.1:9000"
       }
       steps {
-        sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
-      }
-            steps {
-        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
-        }}
+        echo "Starting SonarQube analysis stage"
 
-      steps {
+        // Use withCredentials to inject the SONAR_AUTH_TOKEN variable
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          // Print the token for debugging (be cautious: don't expose secrets in production logs)
+          sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
+          // Run the SonarQube Maven analysis command
           sh 'cd backend/backend && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
