@@ -33,9 +33,13 @@ pipeline {
       steps {
         sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
       }
-      steps {
+            steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
           sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
+        }}
+
+      steps {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
           sh 'cd backend/backend && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
