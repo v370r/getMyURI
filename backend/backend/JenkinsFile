@@ -44,6 +44,8 @@ pipeline {
       steps {
         sh 'pwd'
         sh 'ls -la'
+        sh 'cd backend/backend'
+        sh 'ls -la'
       }
     }
     stage('Build and Push Docker Image') {
