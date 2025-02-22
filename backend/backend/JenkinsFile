@@ -77,17 +77,38 @@ pipeline {
         }
         steps {
             withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    set -x
-                    git config user.email "studyrockers5@gmail.com"
-                    git config user.name "v370r1"
-                    BUILD_NUMBER=${BUILD_NUMBER}
-                    echo "Updating deployment file with build number ${BUILD_NUMBER}"
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" backend/backend/spring-boot-app-manifests/deployment.yml
-                    git add backend/backend/spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-                '''
+              sh '''
+                set -x
+                echo "=== BEGIN Update Deployment File Stage ==="
+                echo "Current directory: $(pwd)"
+                echo "Listing workspace:"
+                ls -la
+
+                # Verify the target directory exists
+                echo "Listing backend/backend/spring-boot-app-manifests:"
+                ls -la backend/backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
+
+                git config user.email "studyrockers5@gmail.com"
+                git config user.name "v370r1"
+                echo "BUILD_NUMBER is: ${BUILD_NUMBER}"
+                echo "Updating deployment file with build number ${BUILD_NUMBER}"
+
+                # Update the file and show its contents
+                sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" backend/backend/spring-boot-app-manifests/deployment.yml
+                echo "Contents of deployment.yml after update:"
+                cat backend/backend/spring-boot-app-manifests/deployment.yml
+
+                git add backend/backend/spring-boot-app-manifests/deployment.yml
+                git status
+
+                # Prevent failure if there's nothing to commit
+                git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "Nothing to commit"
+
+                # Push the changes; print output for debugging
+                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main || { echo "Push failed"; exit 1; }
+                
+                echo "=== END Update Deployment File Stage ==="
+            '''
             }
         }
     }
