@@ -31,7 +31,11 @@ pipeline {
         SONAR_URL = "http://172.17.0.1:9000" //seems same network
       }
       steps {
+        sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
+      }
+      steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
           sh 'cd backend/backend && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
