@@ -35,10 +35,7 @@ pipeline {
 
         // Use withCredentials to inject the SONAR_AUTH_TOKEN variable
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          // Print the token for debugging (be cautious: don't expose secrets in production logs)
-          sh 'echo "Token is: $SONAR_AUTH_TOKEN"'
-          // Run the SonarQube Maven analysis command
-          sh 'cd backend/backend && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+          sh 'cd backend/backend && mvn sonar:sonar  -Dsonar.projectKey=getMyURI -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
     }
