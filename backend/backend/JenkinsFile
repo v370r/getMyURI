@@ -105,7 +105,6 @@ pipeline {
                  # Mark workspace as safe for Git
                 git config --global --add safe.directory /var/lib/jenkins/workspace/getMyURI-ProofOfConcept
 
-
                 # Verify the target directory exists
                 echo "Listing backend/spring-boot-app-manifests:"
                 ls -la backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
@@ -129,7 +128,7 @@ pipeline {
                 git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "Nothing to commit"
 
                 # Push the changes; print output for debugging
-                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main || { echo "Push failed"; exit 1; }
+                git push origin HEAD:main || { echo "Push failed"; exit 1; }
                 
                 echo "=== END Update Deployment File Stage ==="
             '''
