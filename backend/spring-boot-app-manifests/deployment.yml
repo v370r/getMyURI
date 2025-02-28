@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: getMyURI-backend
-        image: v370r1/getMyURI:replaceImageTag
+        image: v370r1/getMyURI:64
         ports:
         - containerPort: 8080
