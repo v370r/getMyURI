@@ -72,7 +72,7 @@ pipeline {
   // }
     stage('Test SSH Connection') {
       steps {
-          sshagent(['70963de9-2df1-45e0-8d65-a8fc95f99008']) {
+          sshagent(['github-ssh']) {
               sh '''
                   set -x
                   echo "=== BEGIN SSH TEST ==="
