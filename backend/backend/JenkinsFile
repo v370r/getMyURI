@@ -98,8 +98,8 @@ pipeline {
                 ls -la
 
                 # Verify the target directory exists
-                echo "Listing backend/backend/spring-boot-app-manifests:"
-                ls -la backend/backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
+                echo "Listing backend/spring-boot-app-manifests:"
+                ls -la backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
 
                 git remote -v || echo "No remote found"
 
@@ -109,11 +109,11 @@ pipeline {
                 echo "Updating deployment file with build number ${BUILD_NUMBER}"
 
                 # Update the file and show its contents
-                sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" backend/backend/spring-boot-app-manifests/deployment.yml
+                sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" backend/spring-boot-app-manifests/deployment.yml
                 echo "Contents of deployment.yml after update:"
-                cat backend/backend/spring-boot-app-manifests/deployment.yml
+                cat backend/spring-boot-app-manifests/deployment.yml
 
-                git add backend/backend/spring-boot-app-manifests/deployment.yml
+                git add backend/spring-boot-app-manifests/deployment.yml
                 git status
 
                 # Prevent failure if there's nothing to commit
