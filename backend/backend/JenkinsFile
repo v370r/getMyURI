@@ -70,6 +70,19 @@ pipeline {
   //     }
   //   }
   // }
+    stage('Test SSH Connection') {
+      steps {
+          sshagent(['70963de9-2df1-45e0-8d65-a8fc95f99008']) {
+              sh '''
+                  set -x
+                  echo "=== BEGIN SSH TEST ==="
+                  ssh -o StrictHostKeyChecking=no -T git@github.com || { echo "SSH Connection Failed!"; exit 1; }
+                  echo "=== END SSH TEST ==="
+              '''
+          }
+      }
+     }
+
     stage('Update Deployment File') {
         environment {
             GIT_REPO_NAME = "getMyURI"
