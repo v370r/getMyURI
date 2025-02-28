@@ -102,6 +102,10 @@ pipeline {
                 echo "Listing workspace:"
                 ls -la
 
+                 # Mark workspace as safe for Git
+                git config --global --add safe.directory /var/lib/jenkins/workspace/getMyURI-ProofOfConcept
+
+
                 # Verify the target directory exists
                 echo "Listing backend/spring-boot-app-manifests:"
                 ls -la backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
