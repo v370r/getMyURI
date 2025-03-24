@@ -1,23 +1,21 @@
 package com.getmyuri.backend;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
-@RestController
-@CrossOrigin(origins = "*")
+@SpringBootApplication(scanBasePackages = "com.getmyuri")
+@EnableJpaRepositories("com.getmyuri.repository")
+@EnableMongoRepositories("com.getmyuri.repository")
+@EntityScan("com.getmyuri.model")
+@EnableScheduling
 public class BackendApplication {
 
 	private final Map<String, String> urlMappings = new HashMap<>();
@@ -26,20 +24,22 @@ public class BackendApplication {
 		SpringApplication.run(BackendApplication.class, args);
 	}
 
-	@PostMapping("/add-route")
-	public String addRoute(@RequestParam String path, @RequestParam String targetUrl) {
-		urlMappings.put(path, targetUrl);
-		return "Route added: " + path + " -> " + targetUrl;
-	}
+	// @PostMapping("/add-route")
+	// public String addRoute(@RequestParam String path, @RequestParam String
+	// targetUrl) {
+	// urlMappings.put(path, targetUrl);
+	// return "Route added: " + path + " -> " + targetUrl;
+	// }
 
-	@GetMapping("/{path}")
-	public ResponseEntity<Void> redirect(@PathVariable String path) {
-		String targetUrl = urlMappings.get(path);
-		if (targetUrl != null) {
-			System.out.println("Routing to: " + path + " -> " + targetUrl);
-			return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).location(URI.create(targetUrl)).build();
-		} else {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-		}
-	}
+	// @GetMapping("/{path}")
+	// public ResponseEntity<Void> redirect(@PathVariable String path) {
+	// String targetUrl = urlMappings.get(path);
+	// if (targetUrl != null) {
+	// System.out.println("Routing to: " + path + " -> " + targetUrl);
+	// return
+	// ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).location(URI.create(targetUrl)).build();
+	// } else {
+	// return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+	// }
+	// }
 }

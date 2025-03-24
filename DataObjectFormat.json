@@ -1,0 +1,26 @@
+{
+    "_id": "ObjectId",
+    "alias": "String", 
+    "link": "String", 
+    "location": {
+        "type": "Point",
+        "coordinates": [ "longitude", "latitude" ]
+    },
+    "location_radius": "Number",
+    "timestart": "Date",
+    "timeend": "Date",
+    "sublinks": [
+        {
+            "alias": "String",
+            "link": "String",
+            "clicks": "Number"
+        },
+        {
+            "alias": "String",
+            "link": "String",
+            "clicks": "Number"
+        }
+    ],
+    "password": "String",
+    "clicks": "Number"
+}
