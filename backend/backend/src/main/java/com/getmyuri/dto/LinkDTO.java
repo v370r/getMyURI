@@ -3,6 +3,8 @@ package com.getmyuri.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.getmyuri.model.Location;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,4 +20,6 @@ public class LinkDTO {
     @Builder.Default
     private List<LinkDTO> sublinks = new ArrayList<>();
     private String username;
+    private Location location;
+    private Integer radius;
 }

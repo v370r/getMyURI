@@ -28,7 +28,7 @@ public class DataObjectFormat {
     @Builder.Default
     private Location location = null;
     @Builder.Default
-    private Double location_radius = null;
+    private Integer radius = null;
     @Builder.Default
     private long timestart = 0L;
     @Builder.Default

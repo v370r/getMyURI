@@ -1,5 +1,7 @@
 package com.getmyuri.dto;
 
+import com.getmyuri.model.Location;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -9,5 +11,8 @@ public class ResolvedLinkDTO {
     private String alias;
     private String link;
     private String username;
-    private boolean passwordProtected;
+    private String password;
+    private Location location;
+    private Integer radius;
+
 }

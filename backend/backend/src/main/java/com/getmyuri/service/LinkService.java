@@ -22,7 +22,9 @@ public class LinkService {
         String[] aliasParts = linkDTO.getAlias().split("/");
         if (aliasParts.length == 1) {
             DataObjectFormat root = DataObjectFormat.builder().alias(aliasParts[0]).link(linkDTO.getLink())
-                    .password(linkDTO.getPassword()).username(linkDTO.getUsername()).build();
+                    .password(linkDTO.getPassword()).username(linkDTO.getUsername()).location(linkDTO.getLocation())
+                    .radius(linkDTO.getRadius())
+                    .build();
             return linkRepository.save(root);
 
         }
@@ -33,7 +35,8 @@ public class LinkService {
 
         if ((root == null) && aliasParts.length == 1) {
             root = DataObjectFormat.builder().alias(aliasParts[0]).link(linkDTO.getLink())
-                    .password(linkDTO.getPassword()).username(linkDTO.getUsername()).build();
+                    .password(linkDTO.getPassword()).username(linkDTO.getUsername()).radius(linkDTO.getRadius())
+                    .build();
         } else if (root == null) {
             root = DataObjectFormat.builder().alias(aliasParts[0]).username(linkDTO.getUsername()).build();
         }
@@ -68,6 +71,8 @@ public class LinkService {
                 current.setLink(linkDTO.getLink());
                 current.setPassword(linkDTO.getPassword());
                 current.setClicks(0);
+                current.setLocation(linkDTO.getLocation());
+                current.setRadius(linkDTO.getRadius());
             }
 
             currentLevel = current.getSublinks();
@@ -76,7 +81,7 @@ public class LinkService {
         return linkRepository.save(root);
     }
 
-    public Optional<ResolvedLinkDTO> getLinkIfPasswordMatches(String aliasPath, String password) {
+    public Optional<ResolvedLinkDTO> getLink(String aliasPath) {
         String[] parts = aliasPath.split("/");
         if (parts.length == 0)
             return Optional.empty();
@@ -90,14 +95,16 @@ public class LinkService {
         if (parts.length == 1)
             return Optional.of(ResolvedLinkDTO.builder().alias(aliasPath).link(rootOpt.get().getLink()).build());
 
-        if (current != null && (current.getPassword() == null || current.getPassword().equals(password))
+        if ((current != null)
                 && (current.getUsername() == null)) {
             return Optional.of(
                     ResolvedLinkDTO.builder()
                             .alias(aliasPath)
                             .link(current.getLink())
-                            .passwordProtected(current.getPassword() != null)
+                            .password(current.getPassword())
                             .username(rootOpt.get().getUsername())
+                            .location(current.getLocation())
+                            .radius(current.getRadius())
                             .build());
         }
 

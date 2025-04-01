@@ -2,6 +2,7 @@ package com.getmyuri.service;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,12 +32,18 @@ public class RedisToPostgresFlusher {
         Map<String, Long> clicks = redisClickService.getAndClearClicks();
 
         for (Map.Entry<String, Long> entry : clicks.entrySet()) {
-            String[] reg = entry.getKey().split(":");
-            String username = reg[0];
-            ClickMetric metric = ClickMetric.builder().alias(reg[1]).clickCount(entry.getValue())
-                    .username(username)
-                    .clickDate(LocalDateTime.now()).build();
-            clickMetricRepository.save(metric);
+            String[] reg = entry.getKey().split(":", 2);
+            String username = Optional.ofNullable(reg[0]).orElse("default");
+            String alias = reg[1];
+
+            if (username.trim().isEmpty())
+                username = "default";
+
+            clickMetricRepository.upsertClickMetric(
+                    username,
+                    alias,
+                    entry.getValue(),
+                    LocalDateTime.now());
         }
 
         System.out.println("Flushed " + clicks.size() + " click(s) to PostgreSQL.");

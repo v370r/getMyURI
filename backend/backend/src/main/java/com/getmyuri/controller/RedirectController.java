@@ -9,13 +9,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.getmyuri.dto.ResolvedLinkDTO;
+import com.getmyuri.service.GeoUtils;
 import com.getmyuri.service.LinkService;
 import com.getmyuri.service.RedisClickService;
 
@@ -34,14 +34,59 @@ public class RedirectController {
 
     @GetMapping("/**")
     public ResponseEntity<?> catchRedirect(HttpServletRequest request,
-            @RequestParam(required = false) String passcode) {
+            @RequestParam(required = false) String passcode,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
         String fullPath = request.getRequestURI().replaceFirst("/r/", "");
         System.out.println("Received aliasPath: " + fullPath);
 
-        Optional<ResolvedLinkDTO> resolvedUrl = linkService.getLinkIfPasswordMatches(fullPath, passcode);
+        String[] parts = fullPath.split("/");
+        if (parts.length == 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid request format"));
+        }
+
+        Optional<ResolvedLinkDTO> resolvedUrl = linkService.getLink(fullPath);
 
         if (resolvedUrl.isPresent()) {
             ResolvedLinkDTO dto = resolvedUrl.get();
+            if (dto.getLocation() != null && dto.getRadius() != null) {
+                if (lat == null && lon == null) {
+                    String redirectUrl = UriComponentsBuilder.fromUriString("https://getmyuri.com/auth")
+                            .queryParam("aliasPath", fullPath)
+                            .queryParam("location_required", true)
+                            .queryParam("password_required", dto.getPassword() != null)
+                            .build().toUriString();
+
+                    return ResponseEntity.status(HttpStatus.FOUND)
+                            .location(URI.create(redirectUrl))
+                            .build();
+                } else {
+                    boolean iswithIn = GeoUtils.isWithinRadius(dto.getLocation(), lat, lon, dto.getRadius());
+                    if (!iswithIn) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body(Map.of(
+                                        "error", "Access denied",
+                                        "reason", "You are outside the allowed radius",
+                                        "location_required", true));
+                    }
+                }
+
+            }
+            if (dto.getPassword() != null && !dto.getPassword().equals(passcode)) {
+
+                String redirectUrl = UriComponentsBuilder.fromUriString("https://getmyuri.com/auth")
+                        .queryParam("aliasPath", fullPath)
+                        .queryParam("link", dto.getLink())
+                        .queryParam("location_required", dto.getLocation() != null)
+                        .queryParam("password_required", dto.getPassword() != null)
+                        .build().toUriString();
+
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(redirectUrl)) // This sends the 302 redirect with Location header
+                        .build();
+
+            }
             redisClickService.incrementClick(dto.getUsername(), dto.getAlias());
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(dto.getLink())).build();
         } else
