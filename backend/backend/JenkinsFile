@@ -18,6 +18,12 @@ pipeline {
       }
     }
     stage('Build and Test') {
+      environment {
+        MONGODB_URI = "mongodb+srv://vetor:6XnqDM27QMMs9RZr@cluster0.x2vqe.mongodb.net/getmyuri?retryWrites=true&w=majority"
+        REDIS_HOST = "18.222.186.34"
+        REDIS_PORT = "6379"
+        REDIS_PASSWORD = "6XnqDM27QMMs9RZr"
+    }
       steps {
         sh 'ls -ltr'
         // build the project and create a JAR file
@@ -44,22 +50,29 @@ pipeline {
         }
       }
     }
-    stage('Build and Push Docker Image to DockerHub ') {
+    stage('Build and Push Docker Image to DockerHub') {
       environment {
-        DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
-        // DOCKERFILE_LOCATION = "java-maven-sonar-argocd-helm-k8s/spring-boot-app/Dockerfile"
-        REGISTRY_CREDENTIALS = credentials('docker-cred')
+          DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
+          REGISTRY_CREDENTIALS = credentials('docker-cred')
       }
       steps {
-        script {
-            sh 'cd backend/backend && docker build -t ${DOCKER_IMAGE} .'
-            def dockerImage = docker.image("${DOCKER_IMAGE}")
-            docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
-                dockerImage.push()
-            }
-        }
+          script {
+              echo "🔧 Building Docker image: ${DOCKER_IMAGE}"
+              def dockerImage = docker.build("${DOCKER_IMAGE}", "backend/backend")
+
+              echo "Pushing Docker image to DockerHub..."
+              docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
+                  try {
+                      dockerImage.push()
+                      echo "Successfully pushed: ${DOCKER_IMAGE}"
+                  } catch (err) {
+                      error "Docker push failed: ${err}"
+                  }
+              }
+          }
       }
-    }
+}
+
   // TODO: Future enhancement
   //   stage('Build and Push Docker Image to Local Registry') {
   //   environment {
@@ -105,6 +118,10 @@ pipeline {
                  # Mark workspace as safe for Git
                 git config --global --add safe.directory /var/lib/jenkins/workspace/getMyURI-ProofOfConcept
 
+                # Fetch and checkout correct branch
+                git fetch origin proofOfConcept
+                git checkout proofOfConcept
+
                 # Verify the target directory exists
                 echo "Listing backend/spring-boot-app-manifests:"
                 ls -la backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
@@ -128,7 +145,7 @@ pipeline {
                 git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "Nothing to commit"
 
                 # Push the changes; print output for debugging
-                git push origin HEAD:main || { echo "Push failed"; exit 1; }
+                git push origin HEAD:proofOfConcept || { echo "Push failed"; exit 1; }
                 
                 echo "=== END Update Deployment File Stage ==="
             '''
