@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -33,10 +34,12 @@ public class DataObjectFormat {
     private long timestart = 0L;
     @Builder.Default
     private long timeend = 0L;
-    private List<LinkDTO> sublinks;
+    private List<DataObjectFormat> sublinks;
     @Builder.Default
     private String password = "";
     @Builder.Default
     private int clicks = 0;
     private String username;
+    private Date startTime;
+    private Date expiresAt;
 }

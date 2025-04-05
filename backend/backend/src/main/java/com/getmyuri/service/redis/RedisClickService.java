@@ -1,4 +1,4 @@
-package com.getmyuri.service;
+package com.getmyuri.service.redis;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

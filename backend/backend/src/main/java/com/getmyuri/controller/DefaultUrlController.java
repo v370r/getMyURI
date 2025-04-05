@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.getmyuri.dto.LinkDTO;
 import com.getmyuri.service.DefaultUrlService;
 
 @RestController
@@ -21,14 +22,14 @@ public class DefaultUrlController {
     private DefaultUrlService defaultUrlService;
 
     @PostMapping("/shorten")
-    public ResponseEntity<?> shorten(@RequestBody Map<String, String> body) {
-        String longUrl = body.get("longUrl");
+    public ResponseEntity<?> shorten(@RequestBody LinkDTO linkDTO) {
+        String longUrl = linkDTO.getLink();
 
         if (longUrl == null || longUrl.isBlank()) {
             return ResponseEntity.badRequest().body("Missing longUrl");
         }
 
-        String shortUrl = defaultUrlService.createShortUrl(longUrl);
+        String shortUrl = defaultUrlService.createShortUrl(linkDTO);
         return ResponseEntity.ok(Map.of("shortUrl", shortUrl));
     }
 }
