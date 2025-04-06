@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.getmyuri.dto.LinkDTO;
@@ -24,10 +25,15 @@ public class LinkService {
     @Autowired
     private LinkRepository linkRepository;
 
+    @Value("${shortlink.default.ttl}")
+    private String defaultTtlString;
+
     public DataObjectFormat createLink(LinkDTO linkDTO) {
         String[] aliasParts = linkDTO.getAlias().split("/");
-        Date startTime = linkDTO.getStartTime();
-        Date expiresAt = DateCalculations.calculateExpiryFrom(startTime, linkDTO.getExpiresAt());
+
+        Date startTime = linkDTO.getStartTime() != null ? linkDTO.getStartTime() : new Date();
+        String futureExpiry = linkDTO.getExpiresAt() != null ? linkDTO.getExpiresAt() : defaultTtlString;
+        Date expiresAt = DateCalculations.calculateExpiryFrom(startTime, futureExpiry);
         if (aliasParts.length == 1) {
             DataObjectFormat root = DataObjectFormat.builder().alias(aliasParts[0]).link(linkDTO.getLink())
                     .password(linkDTO.getPassword()).username(linkDTO.getUsername()).location(linkDTO.getLocation())
@@ -102,7 +108,9 @@ public class LinkService {
 
         DataObjectFormat current = traverseSublinks(rootOpt.get().getSublinks(),
                 Arrays.copyOfRange(parts, 1, parts.length));
-
+        if (current.getStartTime() != null && new Date().before(current.getStartTime())) {
+            return Optional.empty(); // or throw 403 if in controller
+        }
         if (parts.length == 1)
             return Optional.of(ResolvedLinkDTO.builder().alias(aliasPath).link(rootOpt.get().getLink()).build());
 
