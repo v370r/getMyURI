@@ -17,7 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.getmyuri.dto.ResolvedLinkDTO;
 import com.getmyuri.service.GeoUtils;
 import com.getmyuri.service.LinkService;
-import com.getmyuri.service.RedisClickService;
+import com.getmyuri.service.redis.RedisClickService;
 
 import jakarta.servlet.http.HttpServletRequest;
 

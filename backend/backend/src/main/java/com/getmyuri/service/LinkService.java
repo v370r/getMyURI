@@ -1,29 +1,43 @@
 package com.getmyuri.service;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.getmyuri.dto.LinkDTO;
 import com.getmyuri.dto.ResolvedLinkDTO;
 import com.getmyuri.model.DataObjectFormat;
 import com.getmyuri.repository.LinkRepository;
+import com.getmyuri.util.DateCalculations;
 
 @Service
 public class LinkService {
     @Autowired
     private LinkRepository linkRepository;
 
+    @Value("${shortlink.default.ttl}")
+    private String defaultTtlString;
+
     public DataObjectFormat createLink(LinkDTO linkDTO) {
         String[] aliasParts = linkDTO.getAlias().split("/");
+
+        Date startTime = linkDTO.getStartTime() != null ? linkDTO.getStartTime() : new Date();
+        String futureExpiry = linkDTO.getExpiresAt() != null ? linkDTO.getExpiresAt() : defaultTtlString;
+        Date expiresAt = DateCalculations.calculateExpiryFrom(startTime, futureExpiry);
         if (aliasParts.length == 1) {
             DataObjectFormat root = DataObjectFormat.builder().alias(aliasParts[0]).link(linkDTO.getLink())
                     .password(linkDTO.getPassword()).username(linkDTO.getUsername()).location(linkDTO.getLocation())
-                    .radius(linkDTO.getRadius())
+                    .radius(linkDTO.getRadius()).startTime(startTime).expiresAt(expiresAt)
                     .build();
             return linkRepository.save(root);
 
@@ -41,8 +55,8 @@ public class LinkService {
             root = DataObjectFormat.builder().alias(aliasParts[0]).username(linkDTO.getUsername()).build();
         }
 
-        List<LinkDTO> currentLevel = root.getSublinks();
-        LinkDTO current = null;
+        List<DataObjectFormat> currentLevel = root.getSublinks();
+        DataObjectFormat current = null;
 
         for (int i = 1; i < aliasParts.length; i++) {
             String currentAlias = aliasParts[i];
@@ -56,14 +70,14 @@ public class LinkService {
                 }
             }
 
-            Optional<LinkDTO> existing = currentLevel.stream()
+            Optional<DataObjectFormat> existing = currentLevel.stream()
                     .filter(sublink -> sublink.getAlias().equals(currentAlias))
                     .findFirst();
 
             if (existing.isPresent()) {
                 current = existing.get();
             } else {
-                current = LinkDTO.builder().alias(currentAlias).build();
+                current = DataObjectFormat.builder().alias(currentAlias).build();
                 currentLevel.add(current);
             }
 
@@ -73,6 +87,8 @@ public class LinkService {
                 current.setClicks(0);
                 current.setLocation(linkDTO.getLocation());
                 current.setRadius(linkDTO.getRadius());
+                current.setStartTime(startTime);
+                current.setExpiresAt(expiresAt);
             }
 
             currentLevel = current.getSublinks();
@@ -90,8 +106,11 @@ public class LinkService {
         if (rootOpt.isEmpty())
             return Optional.empty();
 
-        LinkDTO current = traverseSublinks(rootOpt.get().getSublinks(), Arrays.copyOfRange(parts, 1, parts.length));
-
+        DataObjectFormat current = traverseSublinks(rootOpt.get().getSublinks(),
+                Arrays.copyOfRange(parts, 1, parts.length));
+        if (current.getStartTime() != null && new Date().before(current.getStartTime())) {
+            return Optional.empty(); // or throw 403 if in controller
+        }
         if (parts.length == 1)
             return Optional.of(ResolvedLinkDTO.builder().alias(aliasPath).link(rootOpt.get().getLink()).build());
 
@@ -111,10 +130,10 @@ public class LinkService {
         return Optional.empty();
     }
 
-    private LinkDTO traverseSublinks(List<LinkDTO> list, String[] path) {
+    private DataObjectFormat traverseSublinks(List<DataObjectFormat> list, String[] path) {
         if (path.length == 0)
             return null;
-        LinkDTO current = null;
+        DataObjectFormat current = null;
         for (String part : path) {
             if (list == null)
                 return null;

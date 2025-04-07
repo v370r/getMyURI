@@ -1,6 +1,7 @@
 package com.getmyuri.dto;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.getmyuri.model.Location;
@@ -22,4 +23,6 @@ public class LinkDTO {
     private String username;
     private Location location;
     private Integer radius;
+    private Date startTime;
+    private String expiresAt;
 }
