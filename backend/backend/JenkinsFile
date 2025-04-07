@@ -27,7 +27,7 @@ pipeline {
       steps {
         sh 'ls -ltr'
         // build the project and create a JAR file
-        sh 'cd backend/backend && mvn clean package'
+        sh 'cd backend/backend && mvn clean test'
       }
     }
       stage('Test Sonar Connectivity') {
