@@ -19,10 +19,10 @@ pipeline {
     }
     stage('Build and Test') {
       environment {
-        //MongoDB URL
+        MONGODB_URI = credentials('MONGODB_URI')
         REDIS_HOST = "18.222.186.34"
         REDIS_PORT = "6379"
-        //Redis password
+        REDIS_PASSWORD = credentials('REDIS_PASSWORD')
     }
       steps {
         sh 'ls -ltr'
