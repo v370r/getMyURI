@@ -53,7 +53,8 @@ pipeline {
     }
     stage('Build and Push Docker Image to DockerHub') {
     environment {
-        DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
+        IMAGE_NAME = "v370r1/getmyuri"
+        DOCKER_IMAGE = "${IMAGE_NAME}:${BUILD_NUMBER}"
         REGISTRY_CREDENTIALS = credentials('docker-cred')
     }
     steps {
@@ -68,11 +69,9 @@ pipeline {
                   docker build -t ${DOCKER_IMAGE} .
                 '''
             } catch (err) {
-                echo "⚠️ Build or Docker build failed: ${err}"
-                error("Stopping stage due to build failure.")
+                error "❌ Build or Docker build failed: ${err}"
             }
 
-            echo "🐳 Building Docker image: ${DOCKER_IMAGE}"
             def dockerImage = docker.image("${DOCKER_IMAGE}")
 
             try {
@@ -82,17 +81,12 @@ pipeline {
                 }
                 echo "✅ Successfully pushed: ${DOCKER_IMAGE}"
             } catch (err) {
-                echo "⚠️ Docker push failed: ${err}"
-                // Optional: If you want to skip failure and continue pipeline
-                // currentBuild.result = 'UNSTABLE'
-                // return
-
-                // Hard fail (if push is critical)
-                error("Docker push failed.")
+                error "❌ Docker push failed: ${err}"
             }
         }
     }
 }
+
 
 
 
