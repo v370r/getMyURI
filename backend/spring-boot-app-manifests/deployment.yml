@@ -14,7 +14,6 @@ spec:
     spec:
       imagePullSecrets:
         - name: regcred  #credentials
-    spec:
       containers:
         - name: getmyuri
           # The image tag will be substituted with the Jenkins build number
