@@ -54,7 +54,6 @@ pipeline {
     stage('Build and Push Docker Image to DockerHub') {
     environment {
         DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
-        REGISTRY_CREDENTIALS = credentials('docker-cred')
     }
     steps {
         script {
@@ -72,8 +71,11 @@ pipeline {
 
                 echo "📤 Pushing Docker image to DockerHub..."
                 def dockerImage = docker.image("${DOCKER_IMAGE}")
-                docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
-                    dockerImage.push()
+
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_USER}:${DOCKER_PASS}") {
+                        dockerImage.push()
+                    }
                 }
 
                 echo "✅ Successfully pushed: ${DOCKER_IMAGE}"
@@ -84,6 +86,7 @@ pipeline {
         }
     }
 }
+
 
 
   // TODO: Future enhancement
