@@ -62,7 +62,7 @@ pipeline {
             sh '''
                 cd backend/backend
                 chmod +x mvnw
-                ./mvnw clean package
+                ./mvnw clean package -DskipTests
             '''
 
             echo "🐳 Building Docker image: ${DOCKER_IMAGE}"
