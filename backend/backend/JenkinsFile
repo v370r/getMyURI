@@ -78,7 +78,8 @@ pipeline {
 
                 echo "✅ Successfully pushed: ${DOCKER_IMAGE}"
             } catch (err) {
-                echo "❌ Docker build or push failed: ${err}"
+                echo "❌ Docker push failed: ${err}"
+                currentBuild.result = 'FAILURE'
                 error("Stopping pipeline due to failure.")
             }
         }
