@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Enter the Docker image tag/build number to deploy')
+    }
+
+    environment {
+        GCP_PROJECT = "elegant-circle-454202-e1"
+        GCP_CLUSTER = "getmyuri-cluster"
+        GCP_ZONE = "us-central1-a"
+    }
+
+    stages {
+        stage('Update Kubernetes Manifest and Deploy to GKE') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_CREDENTIALS_JSON')]) {
+                    sh """
+                      # Replace the BUILD_NUMBER placeholder in the manifest with the provided parameter value
+                      sed "s|BUILD_NUMBER|${BUILD_NUMBER}|g" k8s/deployment.yaml > k8s/deployment-build.yaml
+                      
+                      # Authenticate with GCP and get the cluster credentials
+                      gcloud auth activate-service-account --key-file=$GOOGLE_CREDENTIALS_JSON
+                      gcloud config set project ${GCP_PROJECT}
+                      gcloud container clusters get-credentials ${GCP_CLUSTER} --zone ${GCP_ZONE}
+                      
+                      # Deploy the updated manifest to GKE
+                      kubectl apply -f k8s/deployment-build.yaml
+                      kubectl apply -f k8s/service.yaml
+                    """
+                }
+            }
+        }
+    }
+}
