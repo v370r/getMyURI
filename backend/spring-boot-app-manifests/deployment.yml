@@ -15,7 +15,7 @@ spec:
       containers:
         - name: getmyuri
           # The image tag will be substituted with the Jenkins build number
-          image: yourdockerhubuser/getmyuri-backend:BUILD_NUMBER
+          image: v370r1/getmyuri:65
           ports:
             - containerPort: 9090
           env:
