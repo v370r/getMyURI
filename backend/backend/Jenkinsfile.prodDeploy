@@ -8,7 +8,7 @@ pipeline {
     environment {
         GCP_PROJECT = "elegant-circle-454202-e1"
         GCP_CLUSTER = "getmyuri-cluster"
-        GCP_ZONE = "us-central1-a"
+        GCP_ZONE = "us-central1-b"
     }
 
     stages {
