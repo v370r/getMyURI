@@ -60,11 +60,12 @@ pipeline {
         script {
             echo "Building JAR before Docker build..."
             sh '''
-                cd backend/backend
-                chmod +x mvnw
-                ./mvnw clean package -DskipTests
-                docker build -t ${DOCKER_IMAGE} .
-            '''
+              set -e
+              cd backend/backend
+              chmod +x mvnw || true
+              ./mvnw clean package -DskipTests
+              docker build -t ${DOCKER_IMAGE} .
+          '''
             echo "🔧 Building Docker image: ${DOCKER_IMAGE}"
             def dockerImage = docker.image("${DOCKER_IMAGE}")
 
