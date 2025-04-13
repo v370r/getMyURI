@@ -17,7 +17,7 @@ spec:
       containers:
         - name: getmyuri
           # The image tag will be substituted with the Jenkins build number
-          image: v370r1/getmyuri:65
+          image: v370r1/getmyuri:107
           ports:
             - containerPort: 9090
           env:

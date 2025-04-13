@@ -1,5 +1,6 @@
 package com.getmyuri.service;
 
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -12,10 +13,12 @@ import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 
 import com.getmyuri.dto.LinkDTO;
 import com.getmyuri.dto.ResolvedLinkDTO;
+import com.getmyuri.model.ClickMetric;
 import com.getmyuri.model.DataObjectFormat;
 import com.getmyuri.repository.LinkRepository;
 import com.getmyuri.util.DateCalculations;
@@ -31,7 +34,7 @@ public class LinkService {
     public DataObjectFormat createLink(LinkDTO linkDTO) {
         String[] aliasParts = linkDTO.getAlias().split("/");
 
-        Date startTime = linkDTO.getStartTime() != null ? linkDTO.getStartTime() : new Date();
+        Date startTime = linkDTO.getStartTime() != null ? linkDTO.getStartTime() : Date.from(Instant.now());
         String futureExpiry = linkDTO.getExpiresAt() != null ? linkDTO.getExpiresAt() : defaultTtlString;
         Date expiresAt = DateCalculations.calculateExpiryFrom(startTime, futureExpiry);
         if (aliasParts.length == 1) {
@@ -106,11 +109,38 @@ public class LinkService {
         if (rootOpt.isEmpty())
             return Optional.empty();
 
+        if (rootOpt.get().getSublinks() == null) {
+            return Optional.of(ResolvedLinkDTO.builder()
+                    .alias(aliasPath)
+                    .link(rootOpt.get().getLink())
+                    .password(rootOpt.get().getPassword())
+                    .username(rootOpt.get().getUsername())
+                    .location(rootOpt.get().getLocation())
+                    .radius(rootOpt.get().getRadius())
+                    .build());
+
+        }
+
         DataObjectFormat current = traverseSublinks(rootOpt.get().getSublinks(),
                 Arrays.copyOfRange(parts, 1, parts.length));
-        if (current.getStartTime() != null && new Date().before(current.getStartTime())) {
-            return Optional.empty(); // or throw 403 if in controller
+        // if (current.getStartTime() != null &&
+        // Date.from(Instant.now()).before(current.getStartTime())) {
+        // System.out.println(Date.from(Instant.now()));
+        // return Optional.empty(); // or throw 403 if in controller
+        // }
+        if (current.getStartTime() != null) {
+            Instant now = Instant.now();
+            Date nowUtc = Date.from(now);
+
+            System.out.println(" UTC Now        : " + nowUtc);
+            System.out.println(" Start Time UTC : " + current.getStartTime());
+
+            if (nowUtc.before(current.getStartTime())) {
+                System.out.println(" Link is not yet active!");
+                return Optional.empty(); // or throw 403
+            }
         }
+
         if (parts.length == 1)
             return Optional.of(ResolvedLinkDTO.builder().alias(aliasPath).link(rootOpt.get().getLink()).build());
 
@@ -159,6 +189,57 @@ public class LinkService {
             return true;
         }
         return false;
+    }
+
+    public boolean deleteLinkByAliasPath(String aliasPath) {
+        String[] parts = aliasPath.split("/");
+        if (parts.length == 0)
+            return false;
+
+        Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
+        if (rootOpt.isEmpty())
+            return false;
+
+        if (parts.length == 1) {
+            // deleting root alias
+            linkRepository.deleteById(rootOpt.get().getId());
+            return true;
+        }
+
+        DataObjectFormat root = rootOpt.get();
+        List<DataObjectFormat> currentLevel = root.getSublinks();
+        DataObjectFormat parent = null;
+        DataObjectFormat toDelete = null;
+
+        for (int i = 1; i < parts.length; i++) {
+            String currentAlias = parts[i];
+
+            if (currentLevel == null)
+                return false;
+
+            Optional<DataObjectFormat> match = currentLevel.stream()
+                    .filter(link -> link.getAlias().equals(currentAlias))
+                    .findFirst();
+
+            if (match.isEmpty())
+                return false;
+
+            parent = toDelete;
+            toDelete = match.get();
+
+            if (i < parts.length - 1) {
+                currentLevel = toDelete.getSublinks();
+            }
+        }
+
+        if (toDelete != null && parent != null && parent.getSublinks() != null) {
+            parent.getSublinks().remove(toDelete);
+        } else if (toDelete != null && root.getSublinks() != null) {
+            root.getSublinks().remove(toDelete);
+        }
+
+        linkRepository.save(root); // persist the updated root tree
+        return true;
     }
 
 }

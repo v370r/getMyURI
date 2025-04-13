@@ -73,7 +73,7 @@ public class RedirectController {
                 }
 
             }
-            if (dto.getPassword() != null && !dto.getPassword().equals(passcode)) {
+            if (dto.getPassword().length() != 0 && dto.getPassword() != null && !dto.getPassword().equals(passcode)) {
 
                 String redirectUrl = UriComponentsBuilder.fromUriString("https://getmyuri.com/auth")
                         .queryParam("aliasPath", fullPath)
