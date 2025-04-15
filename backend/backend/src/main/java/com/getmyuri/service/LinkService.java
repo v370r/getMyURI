@@ -1,30 +1,29 @@
 package com.getmyuri.service;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 
 import com.getmyuri.dto.LinkDTO;
 import com.getmyuri.dto.ResolvedLinkDTO;
-import com.getmyuri.model.ClickMetric;
 import com.getmyuri.model.DataObjectFormat;
 import com.getmyuri.repository.LinkRepository;
 import com.getmyuri.util.DateCalculations;
 
 @Service
 public class LinkService {
+
+    private static final Logger logger = LoggerFactory.getLogger(LinkService.class);
+      
     @Autowired
     private LinkRepository linkRepository;
 
@@ -32,6 +31,8 @@ public class LinkService {
     private String defaultTtlString;
 
     public DataObjectFormat createLink(LinkDTO linkDTO) {
+
+        logger.info("Creating link for alias: {}", linkDTO.getAlias());
         String[] aliasParts = linkDTO.getAlias().split("/");
 
         Date startTime = linkDTO.getStartTime() != null ? linkDTO.getStartTime() : Date.from(Instant.now());
@@ -42,6 +43,7 @@ public class LinkService {
                     .password(linkDTO.getPassword()).username(linkDTO.getUsername()).location(linkDTO.getLocation())
                     .radius(linkDTO.getRadius()).startTime(startTime).expiresAt(expiresAt)
                     .build();
+            logger.info("Saving root link: {}", root.getAlias());
             return linkRepository.save(root);
 
         }
@@ -92,24 +94,30 @@ public class LinkService {
                 current.setRadius(linkDTO.getRadius());
                 current.setStartTime(startTime);
                 current.setExpiresAt(expiresAt);
+                logger.info("Added/Updated sublink: {}", currentAlias);
             }
 
             currentLevel = current.getSublinks();
         }
-
+        logger.info("Saving updated link hierarchy for root: {}", root.getAlias());
         return linkRepository.save(root);
     }
 
     public Optional<ResolvedLinkDTO> getLink(String aliasPath) {
+
+        logger.info("Resolving alias path: {}", aliasPath);
         String[] parts = aliasPath.split("/");
         if (parts.length == 0)
             return Optional.empty();
 
         Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
-        if (rootOpt.isEmpty())
+        if (rootOpt.isEmpty()){
+            logger.warn("Root alias not found: {}", parts[0]);
             return Optional.empty();
+        }
 
         if (rootOpt.get().getSublinks() == null) {
+            logger.debug("No sublinks found for root alias: {}", parts[0]);
             return Optional.of(ResolvedLinkDTO.builder()
                     .alias(aliasPath)
                     .link(rootOpt.get().getLink())
@@ -123,27 +131,21 @@ public class LinkService {
 
         DataObjectFormat current = traverseSublinks(rootOpt.get().getSublinks(),
                 Arrays.copyOfRange(parts, 1, parts.length));
-        // if (current.getStartTime() != null &&
-        // Date.from(Instant.now()).before(current.getStartTime())) {
-        // System.out.println(Date.from(Instant.now()));
-        // return Optional.empty(); // or throw 403 if in controller
-        // }
-        if (current.getStartTime() != null) {
-            Instant now = Instant.now();
-            Date nowUtc = Date.from(now);
 
-            System.out.println(" UTC Now        : " + nowUtc);
-            System.out.println(" Start Time UTC : " + current.getStartTime());
+        if (current == null) {
+            logger.warn("Sublink not found for alias path: {}", aliasPath);
+            return Optional.empty();
+        }
 
-            if (nowUtc.before(current.getStartTime())) {
-                System.out.println(" Link is not yet active!");
-                return Optional.empty(); // or throw 403
-            }
+        if (current.getStartTime() != null && Date.from(Instant.now()).before(current.getStartTime())) {
+            logger.info("Link not yet active for alias: {}, starts at {}", aliasPath, current.getStartTime());
+            return Optional.empty();
         }
 
         if (parts.length == 1)
             return Optional.of(ResolvedLinkDTO.builder().alias(aliasPath).link(rootOpt.get().getLink()).build());
-
+            
+        logger.info("Successfully resolved alias path: {}", aliasPath);
         if ((current != null)
                 && (current.getUsername() == null)) {
             return Optional.of(
@@ -176,33 +178,42 @@ public class LinkService {
     }
 
     public List<DataObjectFormat> getAllLinks() {
+        logger.info("Fetching all links from MongoDB...");
         return linkRepository.findAll();
     }
 
     public Optional<DataObjectFormat> getLinkByAlias(String alias) {
+        logger.info("Fetching link by alias: {}", alias);
         return linkRepository.findByAlias(alias);
     }
 
     public boolean deleteLink(String id) {
+        logger.info("Deleting link by ID: {}", id);
         if (linkRepository.existsById(id)) {
             linkRepository.deleteById(id);
+            logger.info("Successfully deleted link with ID: {}", id);
             return true;
         }
+        logger.warn("Attempted to delete non-existent link with ID: {}", id);
         return false;
     }
 
     public boolean deleteLinkByAliasPath(String aliasPath) {
+
+        logger.info("Deleting link by alias path: {}", aliasPath);
         String[] parts = aliasPath.split("/");
         if (parts.length == 0)
             return false;
 
         Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
-        if (rootOpt.isEmpty())
+        if (rootOpt.isEmpty()){
+            logger.warn("Root alias not found for delete: {}", parts[0]);
             return false;
+        }
 
         if (parts.length == 1) {
-            // deleting root alias
             linkRepository.deleteById(rootOpt.get().getId());
+            logger.info("Deleted root alias: {}", parts[0]);
             return true;
         }
 
@@ -239,6 +250,7 @@ public class LinkService {
         }
 
         linkRepository.save(root); // persist the updated root tree
+        logger.info("Deleted sublink: {}", aliasPath);
         return true;
     }
 
