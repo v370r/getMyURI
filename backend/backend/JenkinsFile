@@ -13,6 +13,8 @@ pipeline {
     // }
     stage('Checkout') {
       steps {
+        deleteDir()
+        checkout scm
         sh 'echo passed'
         //git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
       }
