@@ -86,7 +86,6 @@ public class RedirectController {
                 logger.info("Password required or incorrect for alias: {}", fullPath);
                 String redirectUrl = UriComponentsBuilder.fromUriString("https://getmyuri.com/auth")
                         .queryParam("aliasPath", fullPath)
-                        .queryParam("link", dto.getLink())
                         .queryParam("location_required", dto.getLocation() != null)
                         .queryParam("password_required", dto.getPassword() != null)
                         .build().toUriString();

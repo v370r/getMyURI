@@ -89,4 +89,12 @@ public class LinkController {
         return ResponseEntity.ok(stats);
     }
 
+    @GetMapping("/exists")
+    public ResponseEntity<Boolean> aliasExists(@RequestParam String aliasPath) {
+        logger.info("Checking if alias exists: {}", aliasPath);
+        boolean exists = linkService.aliasExists(aliasPath);
+        return ResponseEntity.ok(exists);
+    }
+
+
 }

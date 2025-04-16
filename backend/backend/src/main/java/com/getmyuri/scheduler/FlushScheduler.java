@@ -29,7 +29,7 @@ public class FlushScheduler {
      */
     @Scheduled(fixedRateString = "${redis.flush.interval}") // 5 minutes
     public void flushClicks() {
-        logger.info("🔄 Flushing click metrics from Redis to PostgreSQL...");
+        logger.info("Flushing click metrics from Redis to PostgreSQL...");
         
         Map<String, Long> clickMap = redisClickService.getAndClearClicks();
         int flushedCount = 0;

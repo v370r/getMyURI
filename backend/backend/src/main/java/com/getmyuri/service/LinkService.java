@@ -254,4 +254,22 @@ public class LinkService {
         return true;
     }
 
+    public boolean aliasExists(String aliasPath) {
+        String[] parts = aliasPath.split("/");
+    
+        if (parts.length == 0) return false;
+    
+        Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
+        if (rootOpt.isEmpty()) return false;
+    
+        if (parts.length == 1) {
+            return true; // Root alias exists
+        }
+    
+        DataObjectFormat current = traverseSublinks(rootOpt.get().getSublinks(),
+                Arrays.copyOfRange(parts, 1, parts.length));
+        return current != null;
+    }
+    
+
 }
