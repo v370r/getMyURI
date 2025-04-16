@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,10 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.getmyuri.constants.ServiceConstants;
 
 @RestController
-@RequestMapping("/health")
+@RequestMapping
 public class ServiceHealthController {
 
-     private static final Logger logger = LoggerFactory.getLogger(ServiceHealthController.class);
+    private static final Logger logger = LoggerFactory.getLogger(ServiceHealthController.class);
 
     @Autowired
     private RedisConnectionFactory redisConnectionFactory;
@@ -35,7 +36,7 @@ public class ServiceHealthController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @GetMapping
+    @GetMapping("/health")
     public Map<String, String> checkServices(@RequestParam String service) {
         logger.info("Health check initiated for service(s): {}", service);
 
@@ -91,4 +92,10 @@ public class ServiceHealthController {
         logger.info("Health check completed: {}", statusMap);
         return statusMap;
     }
+
+    @GetMapping("/")
+    public ResponseEntity<String> root() {
+        return ResponseEntity.ok("getmyuri root is live!");
+    }
+
 }
