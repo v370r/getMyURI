@@ -84,7 +84,7 @@ public class RedirectController {
             if (dto.getPassword().length() != 0 && dto.getPassword() != null && !dto.getPassword().equals(passcode)) {
 
                 logger.info("Password required or incorrect for alias: {}", fullPath);
-                String redirectUrl = UriComponentsBuilder.fromUriString("https:/app.getmyuri.com/auth")
+                String redirectUrl = UriComponentsBuilder.fromUriString("https://app.getmyuri.com/auth")
                         .queryParam("aliasPath", fullPath)
                         .queryParam("location_required", dto.getLocation() != null)
                         .queryParam("password_required", dto.getPassword() != null)
