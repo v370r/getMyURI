@@ -42,69 +42,77 @@ public class RedirectController {
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lon) {
         String fullPath = request.getRequestURI().replaceFirst("/r/", "");
-        logger.info("Received redirect request for aliasPath: {}", fullPath);
-
-        String[] parts = fullPath.split("/");
-        if (parts.length == 0) {
-            logger.warn("Invalid redirect request format: {}", fullPath);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Invalid request format"));
-        }
-
+        logger.info("Received aliasPath: {}", fullPath);
+    
+        // 1) Fetch the link DTO
         Optional<ResolvedLinkDTO> resolvedUrl = linkService.getLink(fullPath);
-
-        if (resolvedUrl.isPresent()) {
-            ResolvedLinkDTO dto = resolvedUrl.get();
-            logger.debug("Resolved URL: {}", dto.getLink());
-            if (dto.getLocation() != null && dto.getRadius() != null) {
-                if (lat == null && lon == null) {
-                    logger.info("Location required but not provided for alias: {}", fullPath);
-                    String redirectUrl = UriComponentsBuilder.fromUriString("http://app.getmyuri.com/auth")
-                            .queryParam("aliasPath", fullPath)
-                            .queryParam("location_required", true)
-                            .queryParam("password_required", dto.getPassword() != null)
-                            .build().toUriString();
-
-                    return ResponseEntity.status(HttpStatus.FOUND)
-                            .location(URI.create(redirectUrl))
-                            .build();
-                } else {
-                    boolean iswithIn = GeoUtils.isWithinRadius(dto.getLocation(), lat, lon, dto.getRadius());
-                    if (!iswithIn) {
-                        logger.warn("Access denied for alias {}: user is outside allowed radius", fullPath);
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                .body(Map.of(
-                                        "error", "Access denied",
-                                        "reason", "You are outside the allowed radius",
-                                        "location_required", true));
-                    }
-                }
-
-            }
-            if (dto.getPassword().length() != 0 && dto.getPassword() != null && !dto.getPassword().equals(passcode)) {
-
-                logger.info("Password required or incorrect for alias: {}", fullPath);
-                String redirectUrl = UriComponentsBuilder.fromUriString("http://app.getmyuri.com/auth")
-                        .queryParam("aliasPath", fullPath)
-                        .queryParam("location_required", dto.getLocation() != null)
-                        .queryParam("password_required", dto.getPassword() != null)
-                        .build().toUriString();
-
-                return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(URI.create(redirectUrl))
-                        .build();
-
-            }
-            redisClickService.incrementClick(dto.getUsername(), dto.getAlias());
-            logger.info("Redirecting to target URL for alias: {}", fullPath);
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(dto.getLink())).build();
-        } else {
-            logger.warn("Invalid alias or passcode for redirect request: {}", fullPath);
+        if (resolvedUrl.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid alias or passcode"));
         }
+        ResolvedLinkDTO dto = resolvedUrl.get();
+    
+        // 2) Determine which checks are required
+        boolean locationRequired = dto.getLocation() != null && dto.getRadius() != null;
+        boolean passwordRequired = dto.getPassword() != null && !dto.getPassword().isEmpty();
+    
+        // 3) If either credential is missing, redirect to auth endpoint in one go
+        if ((locationRequired && (lat == null || lon == null)) ||
+            (passwordRequired && passcode == null)) {
+    
+            String redirectUrl = UriComponentsBuilder
+                    .fromUriString("http://app.getmyuri.com/auth")
+                    .queryParam("aliasPath", fullPath)
+                    .queryParam("location_required", locationRequired)
+                    .queryParam("password_required", passwordRequired)
+                    .build()
+                    .toUriString();
+    
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(redirectUrl))
+                    .build();
+        }
+    
+        // 4) Now that both (if required) are present, verify them:
+    
+        // 4a) Location check
+        if (locationRequired) {
+            boolean within = GeoUtils.isWithinRadius(
+                dto.getLocation(), lat, lon, dto.getRadius());
+            if (!within) {
+                logger.warn("Access denied for alias {}: user is outside allowed radius", fullPath);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                            "error", "Access denied",
+                            "reason", "You are outside the allowed radius",
+                            "location_required", true));
+            }
+        }
+    
+        // 4b) Password check
+        if (passwordRequired && !dto.getPassword().equals(passcode)) {
+            logger.info("Password incorrect for alias: {}", fullPath);
+            String redirectUrl = UriComponentsBuilder
+                    .fromUriString("http://app.getmyuri.com/auth")
+                    .queryParam("aliasPath", fullPath)
+                    .queryParam("location_required", locationRequired)
+                    .queryParam("password_required", passwordRequired)
+                    .build()
+                    .toUriString();
+    
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(redirectUrl))
+                    .build();
+        }
+    
+        // 5) All checks passed → record click and redirect
+        redisClickService.incrementClick(dto.getUsername(), dto.getAlias());
+        logger.info("Redirecting to target URL for alias: {}", fullPath);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(dto.getLink()))
+                .build();
     }
-
+    
     @GetMapping("/ping")
     public String ping() {
         logger.debug("Ping endpoint hit for RedirectController");
