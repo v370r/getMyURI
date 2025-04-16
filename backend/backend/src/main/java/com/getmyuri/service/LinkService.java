@@ -39,14 +39,35 @@ public class LinkService {
         String futureExpiry = linkDTO.getExpiresAt() != null ? linkDTO.getExpiresAt() : defaultTtlString;
         Date expiresAt = DateCalculations.calculateExpiryFrom(startTime, futureExpiry);
         if (aliasParts.length == 1) {
-            DataObjectFormat root = DataObjectFormat.builder().alias(aliasParts[0]).link(linkDTO.getLink())
-                    .password(linkDTO.getPassword()).username(linkDTO.getUsername()).location(linkDTO.getLocation())
-                    .radius(linkDTO.getRadius()).startTime(startTime).expiresAt(expiresAt)
-                    .build();
-            logger.info("Saving root link: {}", root.getAlias());
+            // Check if a root link with the same alias already exists.
+            Optional<DataObjectFormat> existingLinkOpt = linkRepository.findByAlias(aliasParts[0]);
+            DataObjectFormat root;
+            if (existingLinkOpt.isPresent()) {
+                // If exists, update the record with new values.
+                root = existingLinkOpt.get();
+                root.setLink(linkDTO.getLink());
+                root.setPassword(linkDTO.getPassword());
+                root.setUsername(linkDTO.getUsername());
+                root.setLocation(linkDTO.getLocation());
+                root.setRadius(linkDTO.getRadius());
+                root.setStartTime(startTime);
+                root.setExpiresAt(expiresAt);
+                logger.info("Updating existing root link: {}", root.getAlias());
+            } else {
+                root = DataObjectFormat.builder().alias(aliasParts[0])
+                        .link(linkDTO.getLink())
+                        .password(linkDTO.getPassword())
+                        .username(linkDTO.getUsername())
+                        .location(linkDTO.getLocation())
+                        .radius(linkDTO.getRadius())
+                        .startTime(startTime)
+                        .expiresAt(expiresAt)
+                        .build();
+                logger.info("Saving new root link: {}", root.getAlias());
+            }
             return linkRepository.save(root);
-
         }
+        
 
         String rootAlias = aliasParts[0];
         Optional<DataObjectFormat> existingRoot = linkRepository.findByAlias(rootAlias);
