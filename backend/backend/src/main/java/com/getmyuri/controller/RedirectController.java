@@ -45,7 +45,7 @@ public class RedirectController {
             @RequestParam(required = false) Double lon) {
         String fullPath = request.getRequestURI().replaceFirst("/r/", "");
         logger.info("Received aliasPath: {}", fullPath);
-    
+
         // 1) Fetch the link DTO
         Optional<ResolvedLinkDTO> resolvedUrl = linkService.getLink(fullPath);
         if (resolvedUrl.isEmpty()) {
@@ -59,29 +59,28 @@ public class RedirectController {
         // 2) Determine which checks are required
         boolean locationRequired = dto.getLocation() != null && dto.getRadius() != null;
         boolean passwordRequired = dto.getPassword() != null && !dto.getPassword().isEmpty();
-    
+
         // 3) If either credential is missing, redirect to auth endpoint in one go
         if ((locationRequired && (lat == null || lon == null)) ||
-            (passwordRequired && passcode == null)) {
-    
-                logger.warn("Access denied: Incorrect password for alias {}", fullPath);
-                failureReasons.add("passcode");
-            
+                (passwordRequired && passcode == null)) {
+
+            logger.warn("Access denied: Incorrect password for alias {}", fullPath);
+
         }
-    
+
         // 4) Now that both (if required) are present, verify them:
-    
+
         // 4a) Location check
         if (locationRequired) {
             requirements.add("loc");
             boolean within = GeoUtils.isWithinRadius(
-                dto.getLocation(), lat, lon, dto.getRadius());
+                    dto.getLocation(), lat, lon, dto.getRadius());
             if (!within) {
                 logger.warn("Access denied for alias {}: user is outside allowed radius", fullPath);
                 failureReasons.add("location");
             }
         }
-    
+
         // 4b) Password check
         if (passwordRequired && !dto.getPassword().equals(passcode)) {
             requirements.add("pass");
@@ -97,12 +96,12 @@ public class RedirectController {
                     .queryParam("required", String.join(",", requirements))
                     .build()
                     .toUriString();
-        
+
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(redirectUrl))
                     .build();
         }
-    
+
         // 5) All checks passed → record click and redirect
         redisClickService.incrementClick(dto.getUsername(), dto.getAlias());
         logger.info("Redirecting to target URL for alias: {}", fullPath);
@@ -110,7 +109,7 @@ public class RedirectController {
                 .location(URI.create(dto.getLink()))
                 .build();
     }
-    
+
     @GetMapping("/ping")
     public String ping() {
         logger.debug("Ping endpoint hit for RedirectController");
