@@ -2,9 +2,11 @@ package com.getmyuri.controller;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +55,8 @@ public class RedirectController {
                     .body(Map.of("error", "Invalid alias or passcode"));
         }
         ResolvedLinkDTO dto = resolvedUrl.get();
-        List<String> failureReasons = new ArrayList<>();
-        List<String> requirements = new ArrayList<>();
+        Set<String> failureReasons = new HashSet<>();
+        Set<String> requirements = new HashSet<>();
 
         // 2) Determine which checks are required
         boolean locationRequired = dto.getLocation() != null && dto.getRadius() != null;
@@ -65,6 +67,23 @@ public class RedirectController {
                 (passwordRequired && passcode == null)) {
 
             logger.warn("Access denied: Incorrect password for alias {}", fullPath);
+            if (locationRequired) {
+                requirements.add("loc");
+            }
+            if (passwordRequired) {
+                requirements.add("pass");
+            }
+            String redirectUrl = UriComponentsBuilder
+                    .fromUriString("https://app.getmyuri.com/error")
+                    .queryParam("aliasPath", fullPath)
+                    .queryParam("reason", String.join(",", failureReasons))
+                    .queryParam("required", String.join(",", requirements))
+                    .build()
+                    .toUriString();
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(redirectUrl))
+                    .build();
 
         }
 
