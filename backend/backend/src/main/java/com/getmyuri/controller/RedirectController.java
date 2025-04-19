@@ -1,6 +1,8 @@
 package com.getmyuri.controller;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -51,7 +53,9 @@ public class RedirectController {
                     .body(Map.of("error", "Invalid alias or passcode"));
         }
         ResolvedLinkDTO dto = resolvedUrl.get();
-    
+        List<String> failureReasons = new ArrayList<>();
+        List<String> requirements = new ArrayList<>();
+
         // 2) Determine which checks are required
         boolean locationRequired = dto.getLocation() != null && dto.getRadius() != null;
         boolean passwordRequired = dto.getPassword() != null && !dto.getPassword().isEmpty();
@@ -60,46 +64,40 @@ public class RedirectController {
         if ((locationRequired && (lat == null || lon == null)) ||
             (passwordRequired && passcode == null)) {
     
-            String redirectUrl = UriComponentsBuilder
-                    .fromUriString("http://app.getmyuri.com/auth")
-                    .queryParam("aliasPath", fullPath)
-                    .queryParam("location_required", locationRequired)
-                    .queryParam("password_required", passwordRequired)
-                    .build()
-                    .toUriString();
-    
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(redirectUrl))
-                    .build();
+                logger.warn("Access denied: Incorrect password for alias {}", fullPath);
+                failureReasons.add("passcode");
+            
         }
     
         // 4) Now that both (if required) are present, verify them:
     
         // 4a) Location check
         if (locationRequired) {
+            requirements.add("loc");
             boolean within = GeoUtils.isWithinRadius(
                 dto.getLocation(), lat, lon, dto.getRadius());
             if (!within) {
                 logger.warn("Access denied for alias {}: user is outside allowed radius", fullPath);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(
-                            "error", "Access denied",
-                            "reason", "You are outside the allowed radius",
-                            "location_required", true));
+                failureReasons.add("location");
             }
         }
     
         // 4b) Password check
         if (passwordRequired && !dto.getPassword().equals(passcode)) {
-            logger.info("Password incorrect for alias: {}", fullPath);
+            requirements.add("pass");
+            failureReasons.add("pass");
+            logger.warn("Password incorrect or missing for alias {}", fullPath);
+        }
+
+        if (!failureReasons.isEmpty() || !requirements.isEmpty()) {
             String redirectUrl = UriComponentsBuilder
-                    .fromUriString("http://app.getmyuri.com/auth")
+                    .fromUriString("https://app.getmyuri.com/error")
                     .queryParam("aliasPath", fullPath)
-                    .queryParam("location_required", locationRequired)
-                    .queryParam("password_required", passwordRequired)
+                    .queryParam("reason", String.join(",", failureReasons))
+                    .queryParam("required", String.join(",", requirements))
                     .build()
                     .toUriString();
-    
+        
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(redirectUrl))
                     .build();
