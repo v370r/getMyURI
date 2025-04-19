@@ -23,7 +23,7 @@ import com.getmyuri.util.DateCalculations;
 public class LinkService {
 
     private static final Logger logger = LoggerFactory.getLogger(LinkService.class);
-      
+
     @Autowired
     private LinkRepository linkRepository;
 
@@ -67,7 +67,6 @@ public class LinkService {
             }
             return linkRepository.save(root);
         }
-        
 
         String rootAlias = aliasParts[0];
         Optional<DataObjectFormat> existingRoot = linkRepository.findByAlias(rootAlias);
@@ -132,8 +131,21 @@ public class LinkService {
             return Optional.empty();
 
         Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
-        if (rootOpt.isEmpty()){
+        if (rootOpt.isEmpty()) {
             logger.warn("Root alias not found: {}", parts[0]);
+            return Optional.empty();
+        }
+
+        DataObjectFormat root = rootOpt.get();
+        Date now = new Date();
+
+        if (root.getStartTime() != null && now.before(root.getStartTime())) {
+            logger.info("Root link not active yet: starts at {}", root.getStartTime());
+            return Optional.empty();
+        }
+
+        if (root.getExpiresAt() != null && now.after(root.getExpiresAt())) {
+            logger.info("Root link expired at {}", root.getExpiresAt());
             return Optional.empty();
         }
 
@@ -158,14 +170,19 @@ public class LinkService {
             return Optional.empty();
         }
 
-        if (current.getStartTime() != null && Date.from(Instant.now()).before(current.getStartTime())) {
-            logger.info("Link not yet active for alias: {}, starts at {}", aliasPath, current.getStartTime());
+        if (current.getStartTime() != null && now.before(current.getStartTime())) {
+            logger.info("Current link not active yet: starts at {}", current.getStartTime());
+            return Optional.empty();
+        }
+
+        if (current.getExpiresAt() != null && now.after(current.getExpiresAt())) {
+            logger.info("Current link expired at {}", current.getExpiresAt());
             return Optional.empty();
         }
 
         if (parts.length == 1)
             return Optional.of(ResolvedLinkDTO.builder().alias(aliasPath).link(rootOpt.get().getLink()).build());
-            
+
         logger.info("Successfully resolved alias path: {}", aliasPath);
         if ((current != null)
                 && (current.getUsername() == null)) {
@@ -227,7 +244,7 @@ public class LinkService {
             return false;
 
         Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
-        if (rootOpt.isEmpty()){
+        if (rootOpt.isEmpty()) {
             logger.warn("Root alias not found for delete: {}", parts[0]);
             return false;
         }
@@ -277,20 +294,21 @@ public class LinkService {
 
     public boolean aliasExists(String aliasPath) {
         String[] parts = aliasPath.split("/");
-    
-        if (parts.length == 0) return false;
-    
+
+        if (parts.length == 0)
+            return false;
+
         Optional<DataObjectFormat> rootOpt = linkRepository.findByAlias(parts[0]);
-        if (rootOpt.isEmpty()) return false;
-    
+        if (rootOpt.isEmpty())
+            return false;
+
         if (parts.length == 1) {
             return true; // Root alias exists
         }
-    
+
         DataObjectFormat current = traverseSublinks(rootOpt.get().getSublinks(),
                 Arrays.copyOfRange(parts, 1, parts.length));
         return current != null;
     }
-    
 
 }
