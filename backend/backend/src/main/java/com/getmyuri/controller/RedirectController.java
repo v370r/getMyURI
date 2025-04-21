@@ -96,7 +96,7 @@ public class RedirectController {
                     dto.getLocation(), lat, lon, dto.getRadius());
             if (!within) {
                 logger.warn("Access denied for alias {}: user is outside allowed radius", fullPath);
-                failureReasons.add("location");
+                failureReasons.add("loc");
             }
         }
 
