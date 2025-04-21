@@ -107,7 +107,7 @@ public class RedirectController {
             logger.warn("Password incorrect or missing for alias {}", fullPath);
         }
 
-        if (!failureReasons.isEmpty() || !requirements.isEmpty()) {
+        if (!failureReasons.isEmpty() && !requirements.isEmpty()) {
             String redirectUrl = UriComponentsBuilder
                     .fromUriString("https://app.getmyuri.com/error")
                     .queryParam("aliasPath", fullPath)
