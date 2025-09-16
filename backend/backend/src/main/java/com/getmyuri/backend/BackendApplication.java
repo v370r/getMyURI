@@ -32,6 +32,11 @@ public class BackendApplication {
 		return "Route added: " + path + " -> " + targetUrl;
 	}
 
+	@GetMapping("/api/hello")
+	public String hello() {
+		return "GetMyURI Backend API is running!";
+	}
+
 	@GetMapping("/{path}")
 	public ResponseEntity<Void> redirect(@PathVariable String path) {
 		String targetUrl = urlMappings.get(path);
