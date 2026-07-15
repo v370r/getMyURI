@@ -1,0 +1,8 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: getmyuri-cert
+spec:
+  domains:
+    - getmyuri.com
+    - www.getmyuri.com

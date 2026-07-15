@@ -1,0 +1,140 @@
+## Kubernetes Commands for Google Cloud (GCP)
+
+### ✅ GKE Cluster Management with `gcloud`
+
+#### 🔧 Create a Kubernetes Cluster
+```
+gcloud container clusters create CLUSTER_NAME \
+  --zone=ZONE \
+  --num-nodes=3
+```
+
+#### 🔄 Resize a Cluster
+```
+gcloud container clusters resize CLUSTER_NAME \
+  --zone=ZONE \
+  --num-nodes=NEW_SIZE
+```
+
+#### 🗑 Delete a Cluster
+```
+gcloud container clusters delete CLUSTER_NAME \
+  --zone=ZONE
+```
+
+#### 📄 Get Credentials for `kubectl`
+```
+gcloud container clusters get-credentials CLUSTER_NAME \
+  --zone=ZONE
+```
+
+---
+
+### ☁️ Authenticate and Configure gcloud
+
+#### 🔐 Login to GCP
+```
+gcloud auth login
+```
+
+#### 🔧 Set Default Project, Region, and Zone
+```
+gcloud config set project PROJECT_ID
+gcloud config set compute/zone ZONE
+gcloud config set compute/region REGION
+```
+
+---
+
+### 🔍 Cluster Info & Nodes
+
+#### 📋 List All GKE Clusters
+```
+gcloud container clusters list
+```
+
+#### 📋 List All Nodes
+```
+kubectl get nodes
+```
+
+---
+
+### 📦 Kubernetes Deployment and Management
+
+#### 📥 Deploy an App
+```
+kubectl create deployment DEPLOYMENT_NAME \
+  --image=IMAGE_NAME
+```
+
+#### 🚀 Expose Deployment as a Service
+```
+kubectl expose deployment DEPLOYMENT_NAME \
+  --type=LoadBalancer \
+  --port=80 \
+  --target-port=PORT_IN_CONTAINER
+```
+
+#### ⚙️ Apply a Manifest File
+```
+kubectl apply -f FILE.yaml
+```
+
+#### 🧼 Delete a Resource
+```
+kubectl delete -f FILE.yaml
+```
+
+---
+
+### 🔎 Get Kubernetes Resources
+```
+kubectl get pods
+kubectl get services
+kubectl get deployments
+kubectl get nodes
+kubectl get namespaces
+```
+
+---
+
+### 📊 Debugging and Logs
+```
+kubectl describe pod POD_NAME
+kubectl logs POD_NAME
+kubectl exec -it POD_NAME -- /bin/bash
+```
+
+---
+
+### 📂 Contexts and Configuration
+```
+kubectl config current-context
+kubectl config use-context CONTEXT_NAME
+kubectl config get-contexts
+```
+
+
+
+#### Clusters list
+```
+gcloud container clusters list
+
+kubectl create secret generic getmyuri-secrets \
+  --from-literal=PG_URL='jdbc:postgresql://ep-nameless-dust-a57ffag6-pooler.us-east-2.aws.neon.tech/getmyuri-clicks?sslmode=require' \
+  --from-literal=PG_USER='neondb_owner' \
+  --from-literal=PG_PASS='npg_HO2Kf7etZGPw' \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create secret generic getmyuri-secrets --from-literal=PG_URL="jdbc:postgresql://ep-nameless-dust-a57ffag6-pooler.us-east-2.aws.neon.tech/getmyuri-clicks?sslmode=require" --from-literal=PG_USER="neondb_owner" --from-literal=PG_PASS="npg_HO2Kf7etZGPw" --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create secret generic getmyuri-secrets ^
+  --from-literal=MONGODB_URI="mongodb+srv://vetor:6XnqDM27QMMs9RZr@cluster0.x2vqe.mongodb.net/getmyuri?retryWrites=true&w=majority" ^
+  --dry-run=client -o yaml | kubectl apply -f -
+
+
+kubectl apply -f deployment.yml
+kubectl apply -f service.yml
+kubectl get pods
+kubectl get services

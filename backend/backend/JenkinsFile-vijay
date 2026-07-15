@@ -1,0 +1,178 @@
+pipeline {
+  agent {
+    docker {
+        image 'v370r1/jenkins-agent:v1'
+        args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
+      }
+  }
+  stages {
+    // stage('Clean Workspace') {
+    //     steps {
+    //         sh 'rm -rf *'
+    //     }
+    // }
+    stage('Checkout') {
+      steps {
+        sh 'echo passed'
+        //git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
+      }
+    }
+    stage('Build and Test') {
+      environment {
+        MONGODB_URI = credentials('MONGODB_URI')
+        REDIS_PASSWORD = credentials('REDIS_PASSWORD')
+        REDIS_HOST = "18.222.186.34"
+        REDIS_PORT = "6379"
+    }
+      steps {
+        echo "Starting build process..."
+        sh 'ls -ltr'
+        // build the project and create a JAR file
+        sh 'cd backend/backend && mvn clean test'
+      }
+    }
+      stage('Test Sonar Connectivity') {
+      steps {
+        // Replace with the IP that the container can reach
+        sh 'curl -v http://172.17.0.1:9000/actuator/health'
+      }
+    }
+
+    stage('Static Code Analysis') {
+      environment {
+        SONAR_URL = "http://172.17.0.1:9000"
+      }
+      steps {
+        echo "Starting SonarQube analysis stage"
+
+        // Use withCredentials to inject the SONAR_AUTH_TOKEN variable
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          sh 'cd backend/backend && mvn sonar:sonar  -Dsonar.projectKey=getMyURI -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        }
+      }
+    }
+    stage('Build and Push Docker Image to DockerHub') {
+    environment {
+        DOCKER_IMAGE = "v370r1/getmyuri:${BUILD_NUMBER}"
+    }
+    steps {
+        script {
+            try {
+                echo "🏗️ Building JAR before Docker build..."
+                sh '''
+                    set -e
+                    cd backend/backend
+                    chmod +x mvnw || true
+                    ./mvnw clean package -DskipTests
+                '''
+
+                echo "🐳 Building Docker image: ${DOCKER_IMAGE}"
+                sh "docker build -t ${DOCKER_IMAGE} backend/backend"
+
+                echo "📤 Pushing Docker image to DockerHub..."
+
+                def dockerImage = docker.image("${DOCKER_IMAGE}")
+
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
+                    '''
+                }
+                echo "✅ Successfully pushed: ${DOCKER_IMAGE}"
+            } catch (err) {
+                echo "❌ Docker build or push failed: ${err.getMessage()}"
+                error("Stopping pipeline due to failure.")
+            }
+        }
+    }
+}
+
+
+
+
+
+
+  // TODO: Future enhancement
+  //   stage('Build and Push Docker Image to Local Registry') {
+  //   environment {
+  //     DOCKER_IMAGE = "localhost:5000/getmyuri:${BUILD_NUMBER}"
+  //   }
+  //   steps {
+  //     script {
+  //       sh 'cd backend/backend && docker build -t ${DOCKER_IMAGE} .'
+  //       def dockerImage = docker.image("${DOCKER_IMAGE}")
+  //       // If your registry requires credentials, you can set up Docker config or use withRegistry
+  //       // For a local, unsecured registry, you might just push directly:
+  //       sh "docker push ${DOCKER_IMAGE}"
+  //     }
+  //   }
+  // }
+    stage('Test SSH Connection') {
+      steps {
+          sshagent(['github-ssh']) {
+              sh '''
+                  set -x
+                  echo "=== BEGIN SSH TEST ==="
+                  ssh -o StrictHostKeyChecking=no -T git@github.com || true
+                  echo "=== END SSH TEST ==="
+              '''
+          }
+      }
+     }
+
+    stage('Update Deployment File') {
+        environment {
+            GIT_REPO_NAME = "getMyURI"
+            GIT_USER_NAME = "v370r1"
+        }
+        steps {
+            sshagent(['github-ssh']) {
+              sh '''
+                set -x
+                echo "=== BEGIN Update Deployment File Stage ==="
+                echo "Current directory: $(pwd)"
+                echo "Listing workspace:"
+                ls -la
+
+                 # Mark workspace as safe for Git
+                git config --global --add safe.directory /var/lib/jenkins/workspace/getMyURI-ProofOfConcept
+
+                # Fetch and checkout correct branch
+                git fetch origin proofOfConcept
+                git checkout proofOfConcept
+                git reset --hard origin/proofOfConcept
+                git clean -fd
+
+                # Verify the target directory exists
+                echo "Listing backend/spring-boot-app-manifests:"
+                ls -la backend/spring-boot-app-manifests || { echo "Directory not found!"; exit 1; }
+
+                git remote -v || echo "No remote found"
+
+                git config user.email "studyrockers5@gmail.com"
+                git config user.name "v370r1"
+                echo "BUILD_NUMBER is: ${BUILD_NUMBER}"
+                echo "Updating deployment file with build number ${BUILD_NUMBER}"
+
+                # Update the file and show its contents
+                sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" backend/spring-boot-app-manifests/deployment.yml
+                echo "Contents of deployment.yml after update:"
+                cat backend/spring-boot-app-manifests/deployment.yml
+
+                git add backend/spring-boot-app-manifests/deployment.yml
+                git status
+
+                # Prevent failure if there's nothing to commit
+                git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "Nothing to commit"
+
+                # Push the changes; print output for debugging
+                git push origin HEAD:proofOfConcept || { echo "Push failed"; exit 1; }
+                
+                echo "=== END Update Deployment File Stage ==="
+            '''
+            }
+        }
+    }
+  }
+}

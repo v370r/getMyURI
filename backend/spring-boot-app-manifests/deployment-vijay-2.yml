@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: getmyuri-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: getmyuri
+  template:
+    metadata:
+      labels:
+        app: getmyuri
+    spec:
+      imagePullSecrets:
+        - name: regcred  #credentials
+      containers:
+        - name: getmyuri
+          # The image tag will be substituted with the Jenkins build number
+          image: v370r1/getmyuri:111
+          ports:
+            - containerPort: 9090
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: MONGODB_URI
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: REDIS_PORT
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: REDIS_PASSWORD
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: PG_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: PG_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: getmyuri-secrets
+                  key: PG_PASS

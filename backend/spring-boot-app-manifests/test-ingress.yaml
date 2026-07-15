@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: getmyuri-ingress
+  annotations:
+    kubernetes.io/ingress.allow-http: "true"   # Optional, allows port 80
+    ingress.kubernetes.io/ssl-redirect: "true" # Forces HTTPS
+spec:
+  ingressClassName: gce
+  tls:
+    - hosts:
+        - getmyuri.com
+        - www.getmyuri.com
+      secretName: getmyuri-tls  # 👈 created with your ZeroSSL cert
+  rules:
+    - host: getmyuri.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: getmyuri-service
+                port:
+                  number: 80
+    - host: www.getmyuri.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: getmyuri-service
+                port:
+                  number: 80
+
